@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Практическая работа: адрес сети по IP и маске</title>
+<style>
+:root{--blue:#1f5fae;--sky:#e8f1fb;--ink:#1d2733;--mute:#5b6b7c;--line:#d5e0ec}
+*{box-sizing:border-box}
+body{margin:0;background:#f2f6fb;color:var(--ink);font:16px/1.55 "Segoe UI",Roboto,Arial,sans-serif}
+.wrap{max-width:860px;margin:0 auto;padding:16px}
+header{background:var(--blue);color:#fff;border-radius:12px;padding:20px 22px;margin-bottom:16px}
+header p{margin:2px 0;opacity:.92;font-size:.95rem}
+header h1{margin:10px 0 0;font-size:1.35rem;line-height:1.3}
+.card{background:#fff;border:1px solid var(--line);border-radius:12px;padding:18px 20px;margin-bottom:16px}
+.card h2{margin:0 0 6px;font-size:1.1rem;color:var(--blue)}
+.pts{font-size:.85rem;color:var(--mute);font-weight:400}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+label{display:block;font-weight:600;font-size:.92rem;margin-bottom:4px}
+input,select{width:100%;padding:9px 11px;border:1.5px solid #b9c9db;border-radius:8px;font:inherit;background:#fff}
+input:focus,select:focus,summary:focus-visible,button:focus-visible{outline:3px solid #9cc2f0;outline-offset:1px}
+.field{margin-top:12px}
+.ok{background:#d4edda!important;border-color:#8fcf9f!important}
+.bad{background:#f8d7da!important;border-color:#e39aa2!important}
+details summary{cursor:pointer;font-weight:600;color:var(--blue)}
+.scale{display:grid;grid-template-columns:repeat(8,1fr);text-align:center;margin:12px 0;border:1px solid var(--line);border-radius:8px;overflow:hidden}
+.scale span{padding:8px 0;font-weight:700;background:var(--sky);border-right:1px solid var(--line)}
+.scale span:last-child{border:0}
+.rule{background:var(--sky);border-radius:8px;padding:10px 14px;margin:0}
+.rule li{margin:3px 0}
+.task-text{margin:4px 0 0}
+.btns{display:flex;flex-wrap:wrap;gap:10px}
+button{border:0;border-radius:8px;padding:11px 18px;font:inherit;font-weight:600;cursor:pointer;background:var(--blue);color:#fff}
+button.sec{background:#fff;color:var(--blue);border:1.5px solid var(--blue)}
+button:disabled{opacity:.6;cursor:wait}
+#result{display:none;text-align:center}
+#result .big{font-size:3rem;font-weight:700;color:var(--blue);line-height:1.1}
+#result .grade{font-size:1.1rem;color:var(--mute)}
+#msg{margin-top:10px;font-weight:600}
+.err{color:#b02a37}.good{color:#1e7b34}
+.print-only{display:none}
+@media(max-width:600px){.row{grid-template-columns:1fr}.scale span{padding:6px 0;font-size:.85rem}}
+@media print{
+ body{background:#fff;font-size:12pt}.wrap{max-width:100%;padding:0}
+ .btns,details,#msg,#picker .hint{display:none!important}
+ header{background:#fff;color:#000;border:2px solid var(--blue)}
+ .card{break-inside:avoid;border-color:#999}
+ .ok,.bad{background:#fff!important;border-color:#999!important}
+ .print-only{display:block}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+ <p>Школа: КГУ «СОШ № 1 им. Н. Г. Чернышевского»</p>
+ <p>Предмет: Информатика и ИИ | Класс: 9 «В»</p>
+ <h1>Тема: Практическая работа «Определение адреса сети по IP-адресу и маске»</h1>
+</header>
+
+<section class="card" id="picker">
+ <div class="row">
+  <div><label for="fio">ФИО учащегося</label><input id="fio" type="text" placeholder="Иванов Иван" autocomplete="name" required></div>
+  <div><label for="variant">Вариант</label>
+   <select id="variant"><option value="">— выберите вариант —</option><option value="1">Вариант 1</option><option value="2">Вариант 2</option></select></div>
+ </div>
+</section>
+
+<section class="card">
+ <details>
+  <summary>Шкала-помощник и правило масок</summary>
+  <div class="scale"><span>128</span><span>64</span><span>32</span><span>16</span><span>8</span><span>4</span><span>2</span><span>1</span></div>
+  <ul class="rule">
+   <li><b>255</b> — число из IP-адреса переносим без изменений;</li>
+   <li><b>0</b> — в адресе сети ставим 0;</li>
+   <li><b>N</b> (другое число) — переводим число и маску в двоичную систему и перемножаем поразрядно (AND).</li>
+  </ul>
+ </details>
+</section>
+
+<div id="tasks"></div>
+
+<section class="card" id="result"><div class="big" id="score"></div><div class="grade" id="grade"></div></section>
+
+<section class="card">
+ <div class="btns">
+  <button id="btnCheck">Проверить и рассчитать балл</button>
+
+ </div>
+ <div id="msg" role="status"></div>
+</section>
+</div>
+
+<script>
+// URL веб-приложения Google Apps Script
+const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycby4qXRMOIBkz5ZodcGPE8WYAKrHNnmfxarUnw52r3FMnRs8HVEKwgudSWCW-q3LARpVeg/exec";
+
+const SAME1 = ["В одной подсети", "В разных подсетях"];
+const SAME2 = ["Смогут напрямую", "Не смогут напрямую (разные подсети)"];
+
+// pts — баллы за поле; сумма по всем полям = 10
+const DATA = {
+ 1: [
+  {t:"Задание 1 (базовое)", p:2, text:"Узел имеет IP-адрес 192.168.10.45 и маску 255.255.255.0. Определите адрес сети.",
+   f:[{id:"a1",l:"IP-адрес сети",k:"192.168.10.0",p:2}]},
+  {t:"Задание 2 (среднее)", p:4, text:"Узел имеет IP-адрес 172.16.145.20 и маску 255.255.224.0. Выполните расчёт для третьего байта.",
+   f:[{id:"b1",l:"Двоичный код 145<sub>10</sub>",k:"10010001",p:1},
+      {id:"b2",l:"Двоичный код 224<sub>10</sub>",k:"11100000",p:1},
+      {id:"b3",l:"Результат поразрядного AND",k:"10000000",p:1},
+      {id:"b4",l:"Итоговый IP-адрес сети",k:"172.16.128.0",p:1}]},
+  {t:"Задание 3 (продвинутое)", p:4, text:"Маска 255.255.255.192. Узел 1: 192.168.1.50, узел 2: 192.168.1.200. Определите, находятся ли узлы в одной подсети.",
+   f:[{id:"c1",l:"Адрес сети узла 1",k:"192.168.1.0",p:1},
+      {id:"c2",l:"Адрес сети узла 2",k:"192.168.1.192",p:1},
+      {id:"c3",l:"Вывод",k:"В разных подсетях",p:2,o:SAME1}]}
+ ],
+ 2: [
+  {t:"Задание 1 (базовое)", p:2, text:"Узел имеет IP-адрес 10.20.30.15 и маску 255.255.0.0. Определите адрес сети.",
+   f:[{id:"a1",l:"IP-адрес сети",k:"10.20.0.0",p:2}]},
+  {t:"Задание 2 (среднее)", p:4, text:"Узел имеет IP-адрес 192.168.180.10 и маску 255.255.192.0. Выполните расчёт для третьего байта.",
+   f:[{id:"b1",l:"Двоичный код 180<sub>10</sub>",k:"10110100",p:1},
+      {id:"b2",l:"Двоичный код 192<sub>10</sub>",k:"11000000",p:1},
+      {id:"b3",l:"Результат поразрядного AND",k:"10000000",p:1},
+      {id:"b4",l:"Итоговый IP-адрес сети",k:"192.168.128.0",p:1}]},
+  {t:"Задание 3 (продвинутое)", p:4, text:"Маска 255.255.255.128. Компьютер кассы: 172.16.10.15, сервер: 172.16.10.140. Смогут ли они обмениваться данными напрямую?",
+   f:[{id:"c1",l:"Адрес сети кассы",k:"172.16.10.0",p:1},
+      {id:"c2",l:"Адрес сети сервера",k:"172.16.10.128",p:1},
+      {id:"c3",l:"Вывод",k:"Не смогут напрямую (разные подсети)",p:2,o:SAME2}]}
+ ]
+};
+
+const $ = id => document.getElementById(id);
+let lastScore = null;
+
+function render(){
+ const v = $("variant").value, box = $("tasks");
+ box.innerHTML = ""; lastScore = null; $("result").style.display = "none"; $("msg").textContent = "";
+ if(!v) return;
+ DATA[v].forEach(task => {
+  const s = document.createElement("section"); s.className = "card";
+  let h = `<h2>${task.t} <span class="pts">— ${task.p} б</span></h2><p class="task-text">${task.text}</p>`;
+  task.f.forEach(f => {
+   h += `<div class="field"><label for="${f.id}">${f.l}</label>`;
+   h += f.o
+    ? `<select id="${f.id}"><option value="">— выберите ответ —</option>${f.o.map(o=>`<option>${o}</option>`).join("")}</select>`
+    : `<input id="${f.id}" type="text" autocomplete="off" inputmode="text">`;
+   h += `</div>`;
+  });
+  s.innerHTML = h; box.appendChild(s);
+ });
+}
+
+function fields(){ return DATA[$("variant").value].flatMap(t => t.f); }
+function norm(s){ return s.trim().replace(/\s+/g," "); }
+
+function say(text, cls){ const m = $("msg"); m.textContent = text; m.className = cls || ""; }
+
+function check(){
+ if(!norm($("fio").value)){ say("Введите ФИО учащегося.", "err"); $("fio").focus(); return false; }
+ if(!$("variant").value){ say("Выберите вариант.", "err"); $("variant").focus(); return false; }
+ let score = 0;
+ fields().forEach(f => {
+  const el = $(f.id), good = norm(el.value) === f.k;
+  el.classList.remove("ok","bad"); el.classList.add(good ? "ok" : "bad");
+  if(good) score += f.p;
+ });
+ lastScore = score;
+ $("score").textContent = score + " / 10";
+ $("grade").textContent = score >= 9 ? "Отлично" : score >= 7 ? "Хорошо" : score >= 5 ? "Удовлетворительно" : "Нужно повторить тему";
+ $("result").style.display = "block"; say("");
+ $("result").scrollIntoView({behavior:"smooth", block:"center"});
+ return true;
+}
+
+async function send(){
+ if(lastScore === null && !check()) return;
+ const answers = {}; fields().forEach(f => answers[f.l.replace(/<[^>]+>/g,"")+" ["+f.id+"]"] = norm($(f.id).value));
+ const payload = {fio:norm($("fio").value), variant:"Вариант "+$("variant").value, score:lastScore, answers};
+ const b = $("btnSend"); b.disabled = true; b.textContent = "Отправка...";
+ try{
+  await fetch(GOOGLE_SCRIPT_URL, {method:"POST", mode:"no-cors", headers:{"Content-Type":"text/plain;charset=utf-8"}, body:JSON.stringify(payload)});
+  say("Ваш результат успешно сохранен в журнале учителя!", "good");
+ }catch(e){ say("Не удалось отправить результат. Проверьте интернет и повторите попытку.", "err"); }
+ b.disabled = false; b.textContent = "Отправить результат учителя".replace("учителя","учителю");
+}
+
+$("variant").addEventListener("change", render);
+$("btnCheck").addEventListener("click", check);
+$("btnSend").addEventListener("click", send);
+$("btnPrint").addEventListener("click", () => {
+ if(lastScore === null && !check()) return;
+ window.print();
+});
+</script>
+
+<!--
+==================== ИНСТРУКЦИЯ ДЛЯ УЧИТЕЛЯ: ПОДКЛЮЧЕНИЕ GOOGLE ТАБЛИЦЫ ====================
+
+1. Откройте https://sheets.google.com и создайте новую таблицу (например, «Журнал 9В — Практическая работа»).
+2. В меню таблицы выберите: Расширения → Apps Script.
+3. Удалите весь код в файле Code.gs и вставьте код ниже целиком. Нажмите «Сохранить» (значок дискеты).
+4. Нажмите «Развернуть» → «Новое развертывание» → значок шестерёнки → тип «Веб-приложение».
+   - Выполнять от имени: «Я» (ваш аккаунт)
+   - У кого есть доступ: «Все» (именно «Все», а не «Все, у кого есть аккаунт Google»)
+5. Нажмите «Развернуть», разрешите доступ (Дополнительно → Перейти на страницу → Разрешить).
+6. Скопируйте «URL веб-приложения» (заканчивается на /exec).
+7. В этом HTML-файле найдите строку const GOOGLE_SCRIPT_URL = "..." и замените адрес на скопированный.
+8. В Code.gs в строке openById укажите идентификатор вашей таблицы (часть адреса между /d/ и /edit).
+   После любого изменения кода Apps Script делайте «Управление развертываниями» → «Изменить» → «Новая версия».
+9. Проверка: откройте работу, заполните, нажмите «Отправить» — в таблице появится строка.
+
+------------------------------ Code.gs ------------------------------
+
+function doPost(e) {
+  var lock = LockService.getScriptLock();
+  lock.waitLock(30000);
+  try {
+    var data = JSON.parse(e.postData.contents);
+    // Таблица открывается по идентификатору: работает и в отдельном (не привязанном) скрипте
+    var ss = SpreadsheetApp.openById("1yHCi-Ei9rGySYT2mVpqdpmgyRbWozDthWoPjWMa1bds");
+    var sheet = ss.getSheets()[0];
+
+    if (sheet.getLastRow() === 0) {
+      sheet.appendRow(["Дата", "ФИО", "Вариант", "Балл", "Ответы"]);
+      sheet.getRange(1, 1, 1, 5).setFontWeight("bold").setBackground("#e8f1fb");
+      sheet.setFrozenRows(1);
+    }
+
+    var answers = [];
+    for (var key in data.answers) {
+      if (data.answers.hasOwnProperty(key)) {
+        answers.push(key + ": " + data.answers[key]);
+      }
+    }
+
+    sheet.appendRow([
+      Utilities.formatDate(new Date(), Session.getScriptTimeZone(), "dd.MM.yyyy HH:mm:ss"),
+      data.fio,
+      data.variant,
+      data.score,
+      answers.join(" | ")
+    ]);
+
+    return ContentService.createTextOutput(JSON.stringify({status: "ok"}))
+      .setMimeType(ContentService.MimeType.JSON);
+  } catch (err) {
+    return ContentService.createTextOutput(JSON.stringify({status: "error", message: String(err)}))
+      .setMimeType(ContentService.MimeType.JSON);
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+function doGet() {
+  return ContentService.createTextOutput("Сервис работает. Результаты принимаются методом POST.");
+}
+
+==================================================================================
+-->
+</body>
+</html>
