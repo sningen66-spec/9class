@@ -1,0 +1,661 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>СОР: сети, DNS, пропускная способность</title>
+<style>
+/* =====================================================================
+   НАСТРОЙКИ ДЛЯ УЧИТЕЛЯ — в разделе <script> ниже, блок CONFIG
+   ===================================================================== */
+:root{
+  --ink:#1f3a56; --muted:#52687e; --bg:#f2f6f9; --card:#ffffff; --line:#c3d0dc;
+  --acc:#2563a8; --accbg:#e3eefa; --teal:#0f7a6c; --tealbg:#e2f5f1;
+  --sel:#d6e8fb; --warn:#9a5b00; --warnbg:#fff4dc; --ok:#1f7a45; --okbg:#e3f5ea;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:"Times New Roman",Times,serif;font-size:21px;line-height:1.45}
+.mono{font-family:"JetBrains Mono",Consolas,"Courier New",monospace}
+header{background:#e6eff8;border-bottom:3px solid #a9c6e4;padding:10px 20px;position:sticky;top:0;z-index:20}
+.hrow{display:flex;flex-wrap:wrap;gap:10px 22px;align-items:center;max-width:1100px;margin:0 auto}
+header h1{font-size:23px;margin:0;flex:1 1 260px;color:#1d4f86}
+.who{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.who label{font-size:17px}
+.who input{font:inherit;font-size:19px;padding:5px 9px;border-radius:6px;border:2px solid #8fb2d6;width:230px;background:#fff;color:var(--ink)}
+.who input.cls{width:80px}
+.who input.need{border-color:#e0a030;background:#fff8e6}
+.who input:disabled{background:#eef3f8;color:var(--ink);opacity:1}
+main{max-width:1100px;margin:16px auto 40px;padding:0 16px}
+.panel{background:var(--card);border:2px solid var(--line);border-radius:14px;padding:22px 26px}
+.hidden{display:none!important}
+h2{margin:0 0 12px;font-size:27px;color:var(--acc)}
+h3{margin:16px 0 8px;font-size:22px}
+table.t{border-collapse:collapse;width:100%;font-size:19px}
+table.t td,table.t th{border:1.5px solid var(--line);padding:5px 10px;text-align:left;vertical-align:top}
+table.t th{background:#eaf1f8}
+table.t td.c{text-align:center;width:90px;font-weight:bold}
+.btn{font:inherit;font-size:20px;font-weight:bold;padding:10px 22px;border-radius:10px;border:none;background:var(--acc);color:#fff;cursor:pointer}
+.btn:hover{filter:brightness(1.08)}
+.btn.sec{background:#e8eef4;color:var(--ink);border:2px solid var(--line)}
+.btn.teal{background:var(--teal)}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.bar{display:flex;gap:12px;flex-wrap:wrap;align-items:center;margin:14px 0}
+.note{color:var(--muted);font-size:18px}
+.rules{background:var(--warnbg);border:2px solid #efcf8a;border-radius:12px;padding:10px 18px;margin:12px 0}
+.rules li{margin:3px 0}
+/* навигация по заданиям */
+.navq{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 14px}
+.navq button{font:inherit;font-size:19px;font-weight:bold;min-width:46px;height:46px;border-radius:10px;border:2px solid var(--line);background:#fff;color:var(--muted);cursor:pointer}
+.navq button.done{background:var(--tealbg);border-color:#7cc4b8;color:var(--teal)}
+.navq button.on{border-color:var(--acc);box-shadow:0 0 0 3px #b9d4f0;color:var(--acc)}
+.q{font-size:23px;margin:4px 0 14px;padding:12px 16px;background:#f6f9fc;border-left:6px solid var(--acc);border-radius:6px}
+.q .tag{display:inline-block;font-size:15px;background:var(--accbg);color:var(--acc);padding:2px 10px;border-radius:12px;margin-bottom:4px;font-weight:bold}
+.q .pts{float:right;font-size:16px;color:var(--muted)}
+.opts{display:grid;gap:10px}
+.opt{font:inherit;font-size:22px;text-align:left;padding:10px 16px;border-radius:10px;border:2px solid var(--line);background:#fff;cursor:pointer;color:var(--ink)}
+.opt.mono{font-family:"JetBrains Mono",Consolas,"Courier New",monospace;font-size:21px}
+.opt:hover{border-color:var(--acc);background:#f4f8fd}
+.opt.sel{border-color:var(--acc);background:var(--sel);font-weight:bold}
+/* адрес сети */
+.ipq{font-size:24px;margin:6px 0 10px}
+.ipin{display:flex;align-items:center;gap:6px;flex-wrap:wrap;font-size:30px;font-family:"JetBrains Mono",Consolas,monospace}
+.ipin input{font:inherit;font-size:28px;width:96px;text-align:center;padding:4px;border-radius:8px;border:2px solid var(--line)}
+.ipin input:focus,.num:focus{outline:none;border-color:var(--acc);box-shadow:0 0 0 3px #b9d4f0}
+/* карточка */
+.cardbox{display:grid;grid-template-columns:auto 1fr;gap:12px 16px;align-items:center;font-size:22px;max-width:640px}
+.cardbox select{font:inherit;font-size:22px;padding:4px 10px;border-radius:8px;border:2px solid var(--line);background:#fff}
+.num{font:inherit;font-size:26px;padding:6px 12px;border-radius:8px;border:2px solid var(--line);width:240px;font-family:"JetBrains Mono",Consolas,monospace}
+.unit{font-size:24px;font-weight:bold;margin-left:6px}
+.qfoot{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-top:22px;border-top:2px solid #e3eaf1;padding-top:14px}
+.score{font-size:30px;font-weight:bold}
+.mark{display:inline-block;font-size:46px;font-weight:bold;color:#fff;background:var(--teal);border-radius:14px;padding:4px 24px;margin:6px 0}
+.send{border-radius:10px;padding:10px 16px;margin:10px 0;font-size:20px}
+.send.ok{background:var(--okbg);border:2px solid #8ccaa4}
+.send.wait{background:var(--accbg);border:2px solid #a9c6e4}
+.send.warn{background:var(--warnbg);border:2px solid #efcf8a}
+/* окна */
+.ov{position:fixed;inset:0;background:rgba(31,58,86,.45);z-index:100;display:flex;align-items:center;justify-content:center;padding:16px}
+.ovbox{background:#fff;border-radius:16px;padding:24px 28px;max-width:640px;width:100%;border:3px solid #a9c6e4;box-shadow:0 10px 40px rgba(0,0,0,.25)}
+.ovbox.warnb{border-color:#efcf8a;background:#fffbf0}
+.ovbox h2{margin-top:0}
+.foot{max-width:1100px;margin:0 auto 20px;padding:0 16px;font-size:15px;color:var(--muted);display:flex;gap:14px;flex-wrap:wrap;align-items:center}
+.foot button{font:inherit;font-size:15px;border:1px solid var(--line);background:#fff;border-radius:6px;padding:2px 10px;cursor:pointer;color:var(--muted)}
+body.run .foot{display:none}
+body.run #work{margin-top:56px}
+.match{border-collapse:collapse;font-size:21px;width:100%}
+.match td{border:1.5px solid var(--line);padding:8px 10px;vertical-align:middle}
+.match td.p{width:110px;text-align:center;font-weight:bold;font-family:"JetBrains Mono",Consolas,monospace;background:#f6f9fc}
+.match select,.vsel{font:inherit;font-size:20px;padding:5px 8px;border-radius:8px;border:2px solid var(--line);background:#fff;color:var(--ink);width:100%}
+.match select.set{border-color:var(--teal);background:var(--tealbg)}
+.vsel{width:auto}
+.cwrap{display:grid;grid-template-columns:minmax(0,1fr) 330px;gap:20px;align-items:start}
+@media(max-width:900px){.cwrap{grid-template-columns:1fr}}
+.calc{border:2px solid #9fd2c8;background:#f3faf8;border-radius:12px;padding:12px 16px}
+.calc h3{margin:0 0 8px;color:var(--teal);font-size:21px}
+.calc label{display:block;font-size:17px;margin-top:8px}
+.calc input{font:inherit;font-family:"JetBrains Mono",Consolas,monospace;font-size:24px;width:100%;padding:5px 10px;border-radius:8px;border:2px solid var(--line);letter-spacing:2px}
+.calc .err{color:var(--warn);font-size:16px;min-height:20px}
+.kgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:4px}
+.kb{font:inherit;font-size:22px;font-weight:bold;height:46px;border-radius:8px;border:2px solid var(--line);background:#fff;color:var(--ink);cursor:pointer}
+.kb:hover{border-color:var(--teal)}
+.kb.op{background:var(--tealbg);border-color:#9fd2c8;color:var(--teal)}
+.kb.cl{background:var(--warnbg);border-color:#efcf8a}
+#kd{text-align:right}
+.vdata{font-size:23px;margin:10px 0;padding:8px 14px;background:#fff7d6;border-radius:8px;display:inline-block}
+body.run #work{user-select:none;-webkit-user-select:none}
+body.run #work input{user-select:text;-webkit-user-select:text}
+@media print{body{display:none}}
+</style>
+</head>
+<body>
+<header>
+ <div class="hrow">
+  <h1 id="ttl">СОР</h1>
+  <div class="who">
+   <label for="fio">Фамилия, имя:</label><input id="fio" type="text" autocomplete="off" spellcheck="false" placeholder="Обязательно">
+   <label for="cls">Класс:</label><input id="cls" class="cls" type="text" autocomplete="off" placeholder="9А">
+  </div>
+ </div>
+</header>
+
+<main>
+ <!-- ======= СТАРТ ======= -->
+ <section id="start" class="panel">
+  <h2 id="startTitle">Суммативное оценивание</h2>
+  <div id="resumeBox" class="hidden"></div>
+  <div id="startMain">
+   <p>Работа состоит из <b id="nTasks">12</b> заданий, всего <b id="nPts">15</b> баллов. Отвечать можно в любом порядке, возвращаться к заданиям и менять ответ — до нажатия кнопки «Завершить работу».</p>
+   <table class="t" id="planTbl" style="max-width:860px"></table>
+   <div class="rules">
+    <b>Правила:</b>
+    <ul style="margin:4px 0">
+     <li>Не переключайся на другие вкладки и программы — каждый уход со страницы <b>записывается</b> и виден учителю.</li>
+     <li>Задание 11 реши <b>на карточке</b>, а в работу введи номер варианта и ответ. В задании 11 есть калькулятор для перевода чисел 10 ↔ 2, в заданиях 7, 10 и 12 — обычный калькулятор.</li>
+     <li>Черновиком пользоваться можно (для адреса сети и вычислений).</li>
+     <li>Если страница случайно закрылась — открой файл снова: ответы сохранились.</li>
+    </ul>
+   </div>
+   <div class="bar"><button class="btn teal" onclick="startWork()">Начать работу</button></div>
+  </div>
+  <div id="queueBox" class="note"></div>
+ </section>
+
+ <!-- ======= РАБОТА ======= -->
+ <section id="work" class="panel hidden">
+  <div class="navq" id="navq"></div>
+  <div id="qBox"></div>
+  <div class="qfoot">
+   <div class="bar" style="margin:0"><button class="btn sec" id="bPrev" onclick="go(-1)">← Назад</button><button class="btn" id="bNext" onclick="go(1)">Дальше →</button></div>
+   <button class="btn teal" onclick="askFinish()">✔ Завершить работу</button>
+  </div>
+ </section>
+
+ <!-- ======= РЕЗУЛЬТАТ ======= -->
+ <section id="end" class="panel hidden"></section>
+</main>
+
+<div class="foot"><span id="linkState">Таблица: …</span><button onclick="pingSheet()">Проверить связь с таблицей</button><button onclick="testWrite()">Записать тестовую строку</button></div>
+
+<!-- окно: уход со страницы -->
+<div id="ovLeave" class="ov hidden"><div class="ovbox warnb">
+ <h2 style="color:var(--warn)">Ты покинул(а) страницу работы</h2>
+ <p>Уход со страницы записан: <b id="leaveN">1</b>. Учитель увидит количество и время уходов в результатах.</p>
+ <div class="bar"><button class="btn teal" onclick="backToWork()">Вернуться к работе</button></div>
+</div></div>
+<!-- окно: подтверждение / сообщения -->
+<div id="ovMsg" class="ov hidden"><div class="ovbox"><div id="msgBody"></div><div class="bar" id="msgBtns"></div></div></div>
+
+<script>
+/* =====================================================================
+   НАСТРОЙКИ ДЛЯ УЧИТЕЛЯ
+   SHEET_URL — ссылка веб-приложения Google Apps Script (…/exec).
+               Пока пусто, результат сохраняется только в файл .txt.
+   SECRET    — секретное слово; должно совпадать со словом в скрипте таблицы.
+   ===================================================================== */
+const CONFIG={
+  SHEET_URL:'https://script.google.com/macros/s/AKfycbyLVjhSV2opCoUFZ9VV8WYCzieNyy4QR1jx21ODuHiiLCxAzb0pfxelaXJYzaJ00OVI/exec',   // ← вставьте ссылку между кавычками: 'https://script.google.com/macros/s/……/exec'
+  SECRET:'sor9-Kv7mQ2',
+  TITLE:'СОР: компьютерные сети и ИИ',
+  FILE_PREFIX:'СОР_сети',
+  SHEET_TAG:'Сети'   // короткое название работы: листы в таблице будут «9А Сети», «9Б Сети»…
+};
+
+CONFIG.SHEET_URL=String(CONFIG.SHEET_URL||'').trim();
+/* ---------- утилиты ---------- */
+const $=id=>document.getElementById(id);
+const rnd=(a,b)=>a+Math.floor(Math.random()*(b-a+1));
+const pick=a=>a[Math.floor(Math.random()*a.length)];
+function shuffle(a){a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a}
+const LET=['А','Б','В','Г','Д','Е','Ж'];
+const esc=s=>String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+const strip=s=>String(s).replace(/<br>/g,' ').replace(/<[^>]+>/g,'').replace(/&nbsp;/g,' ');
+const fmt=n=>Number(n).toLocaleString('ru-RU').replace(/\s/g,' ');
+function parseNum(s){s=String(s).replace(/[\s  ]/g,'').replace(',','.');if(s===''||isNaN(+s))return null;return +s}
+const KEY='sor9_net_state_v1',QKEY='sor9_net_queue_v1';
+const store={get(k){try{return JSON.parse(localStorage.getItem(k))}catch(e){return null}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}},del(k){try{localStorage.removeItem(k)}catch(e){}}};
+
+/* =====================================================================
+   ЗАДАНИЯ (генерируются заново для каждого ученика)
+   ===================================================================== */
+// ---------- Этика ИИ ----------
+const ETH1=[
+ ['Пользователь должен понимать, что решение принято с использованием ИИ, и в важных ситуациях иметь возможность получить объяснение результата. Какой это этический принцип?','прозрачность',['справедливость','ответственность','автоматизация']],
+ ['ИИ должен использоваться так, чтобы его решения не приводили к необоснованной дискриминации людей. Какой это этический принцип?','справедливость',['прозрачность','ответственность','автоматизация']],
+ ['ИИ не несёт человеческой ответственности за последствия решения: она остаётся за людьми и организациями, которые создают и используют систему. Какой это этический принцип?','ответственность',['прозрачность','справедливость','автоматизация']],
+ ['Систематическая и повторяющаяся ошибка в работе систем ИИ, из-за которой решение может оказаться несправедливым, — это…','алгоритмическая предвзятость',['генеративный ИИ','шифрование данных','маршрутизация пакетов']],
+ ['Какие три основных этических принципа применения ИИ изучались на уроке?','справедливость, прозрачность, ответственность',['скорость, точность, автоматизация','шифрование, адресация, маршрутизация','обучение, тестирование, внедрение']],
+ ['Почему решение ИИ может оказаться несправедливым?','данные для обучения неполные или односторонние',['у компьютера слишком большой монитор','ИИ работает слишком быстро','у пользователя медленный интернет']]
+];
+const ETH2=[
+ ['Система видеонаблюдения с ИИ сообщила: «Вероятный нарушитель — ученик 9Б». Ученик говорит, что не делал этого. Как правильно поступить?','результат ИИ должен проверить человек, прежде чем принимать решение',['наказать ученика: ИИ не ошибается','не обращать внимания ни на какие сообщения ИИ','отключить все камеры в школе']],
+ ['Медицинский ИИ обучили на данных пациентов из региона с жарким и сухим климатом. В стране с холодным и влажным климатом он стал ошибаться. В чём причина?','данные для обучения были неполными, односторонними',['у ИИ было слишком много данных','врачи неправильно включали компьютер','ИИ устал от работы']],
+ ['Банк отказал человеку в кредите. На вопрос «почему?» сотрудник ответил: «Так решил алгоритм». Какой принцип нарушен в первую очередь?','прозрачность',['скорость работы','автоматизация','конфиденциальность']],
+ ['ИИ рекомендовал ученику облегчённую программу, учитывая только несколько последних неудачных работ. Учитель знает, что ученик способен на большее. Какой принцип под угрозой?','справедливость',['скорость работы','автоматизация','конфиденциальность']],
+ ['Ученик попросил генеративный ИИ написать эссе, немного изменил несколько предложений и сдал работу как свою. Какой принцип в первую очередь нарушен?','ответственность',['скорость работы','автоматизация','маршрутизация']],
+ ['Подросток посмотрел несколько видео на одну тему, и вскоре почти вся его лента состоит только из таких видео. Что происходит?','алгоритм рекомендаций сужает круг интересов и влияет на взгляды пользователя',['соцсеть показывает все темы одинаково','это ошибка интернет-провайдера','так работает протокол HTTPS']],
+ ['Система распознавания лиц хуже узнаёт людей с тёмной кожей, потому что её обучали в основном на фотографиях светлокожих людей. Какой принцип нарушен?','справедливость',['скорость работы','автоматизация','конфиденциальность']],
+ ['ИИ для отбора резюме чаще отклонял заявки девушек: его обучали на старых данных компании, где на работу брали в основном мужчин. В чём причина несправедливого решения?','алгоритмическая предвзятость из-за односторонних данных',['девушки хуже заполняли резюме','у компьютера не хватило памяти','ИИ специально так запрограммировали']],
+ ['Чат-бот интернет-магазина общается с покупателями, но не сообщает, что это ИИ, а не человек. Какой принцип нарушен?','прозрачность',['справедливость','скорость работы','автоматизация']],
+ ['Беспилотный автомобиль попал в аварию. Кто несёт ответственность за последствия?','люди и компании, которые создали и используют систему',['сам автомобиль','искусственный интеллект','никто, ведь машиной управлял ИИ']],
+ ['Школа хочет, чтобы ИИ сам выставлял итоговые оценки за сочинения, без проверки учителем. Как правильно поступить?','ИИ может помогать, но итоговую оценку проверяет и ставит учитель',['полностью доверить оценивание ИИ: он не устаёт','отменить сочинения','ставить всем одинаковую оценку']],
+ ['В соцсети появилось видео, где известный человек говорит странные вещи. Позже выяснилось, что видео создала нейросеть (дипфейк). Как правильно поступать с такими видео?','проверять информацию в надёжных источниках, прежде чем верить и распространять',['сразу переслать всем друзьям','верить, если видео выглядит реалистично','верить, если у видео много просмотров']],
+ ['Переводчик с ИИ перевёл инструкцию к лекарству с ошибкой. Какой вывод правильный?','важные результаты работы ИИ должен проверять специалист',['переводчикам с ИИ можно доверять всегда','ошибки ИИ ни на что не влияют','инструкции переводить не нужно']],
+ ['В городе установили камеры с ИИ, но жителям не объяснили, какие данные собираются и для чего. Какой принцип нарушен?','прозрачность',['скорость работы','автоматизация','маршрутизация']],
+ ['Навигатор с ИИ предлагает водителю повернуть на дорогу, которая сейчас закрыта на ремонт. Как правильно поступить?','решение принимает человек, учитывая реальную ситуацию',['обязательно выполнить подсказку навигатора','остановиться и ждать, пока навигатор передумает','выключить телефон навсегда']],
+ ['Ученица попросила ИИ найти ошибки в её собственном эссе и честно сообщила об этом учителю. Как оценить её поступок?','это ответственное использование ИИ: работа своя, помощь ИИ открыто указана',['это списывание: ИИ нельзя использовать никогда','это нарушение прозрачности','эссе теперь написал ИИ']]
+];
+// ---------- IP-адрес ----------
+function goodIP(){return [rnd(1,223),rnd(0,255),rnd(0,255),rnd(1,254)].join('.')}
+function badIP(){
+  const k=rnd(0,3);const p=[rnd(1,223),rnd(0,255),rnd(0,255),rnd(1,254)];
+  if(k===0){p[rnd(0,3)]=rnd(256,999);return p.join('.')}
+  if(k===1)return p.join(',');
+  if(k===2)return p.slice(0,3).join('.');
+  return p.concat([rnd(1,200)]).join('.');
+}
+function tIP(){
+  if(Math.random()<.5){const b=badIP();const opts=shuffle([b,goodIP(),goodIP(),goodIP()]);
+    return {type:'choice',tag:'IP-адрес',text:'Какой IP-адрес записан <b>неправильно</b>?',opts,key:opts.indexOf(b),mono:true}}
+  const g=goodIP(),bs=new Set();while(bs.size<3)bs.add(badIP());const opts=shuffle([g,...bs]);
+  return {type:'choice',tag:'IP-адрес',text:'Какой IP-адрес записан <b>правильно</b>?',opts,key:opts.indexOf(g),mono:true};
+}
+// ---------- Протоколы ----------
+const PROTD={IP:'адресация устройств и доставка (маршрутизация) пакетов',TCP:'разбивает данные на пакеты и следит, чтобы все они дошли без потерь',HTTP:'передача веб-страниц без шифрования',HTTPS:'передача веб-страниц с шифрованием',FTP:'передача файлов между клиентом и сервером'};
+function tMatch(){
+  const all=Object.keys(PROTD),ps=shuffle(all).slice(0,4),descs=shuffle(all);
+  return {type:'match',tag:'Протоколы: соответствие',text:'Установи соответствие: выбери назначение для каждого протокола. <span class="note">(Одно назначение лишнее.)</span>',
+    ps,descs,key:ps.map(p=>descs.indexOf(p))};
+}
+const PSIT=[
+ ['Администратор загружает со своего компьютера на сервер школьного сайта папку с файлами через программу-клиент. Какой протокол используется?','FTP'],
+ ['Учитель скачивает с файлового сервера архив с видеоуроками. Адрес архива начинается с…','FTP'],
+ ['Покупатель вводит данные банковской карты в интернет-магазине. Данные должны передаваться в зашифрованном виде. Какой протокол используется?','HTTPS'],
+ ['В адресной строке браузера рядом с адресом сайта виден значок замка. По какому протоколу передаётся страница?','HTTPS'],
+ ['При передаче видео по сети часть пакетов потерялась. Какой протокол заметит это, запросит недостающие пакеты и соберёт их в правильном порядке?','TCP'],
+ ['Пакет с данными должен дойти от компьютера в Семее до сервера в Астане. Какой протокол определяет адрес получателя и маршрут пакета?','IP'],
+ ['Ученик открывает учебный сайт, страница передаётся без шифрования. Какой протокол указан в начале адреса?','HTTP']
+];
+function tPsit(){const s=pick(PSIT);const opts=shuffle([s[1],...shuffle(Object.keys(PROTD).filter(x=>x!==s[1])).slice(0,3)]);
+  return {type:'choice',tag:'Протоколы: ситуация',text:s[0],opts,key:opts.indexOf(s[1]),mono:true}}
+function fromPool(pool,tag){const f=pick(pool);const opts=shuffle([f[1],...f[2]]);
+  return {type:'choice',tag,text:f[0],opts,key:opts.indexOf(f[1]),mono:/^[A-Za-z]+$/.test(f[1])}}
+// ---------- Новые задания ----------
+const IPF=[
+ ['Из скольких чисел состоит IP-адрес версии 4 и в каких пределах может быть каждое из них?','из четырёх чисел от 0 до 255',['из трёх чисел от 0 до 999','из четырёх чисел от 1 до 256','из шести чисел от 0 до 255']],
+ ['Какое наибольшее число может стоять в одной из четырёх частей IP-адреса версии 4?','255',['256','999','100']],
+ ['Что такое IP-адрес?','уникальный числовой адрес устройства в сети',['символьное имя сайта','название программы-браузера','правила передачи данных']],
+ ['Какой знак разделяет числа в записи IP-адреса версии 4?','точка',['запятая','двоеточие','пробел']],
+ ['Сколько бит занимает IP-адрес версии 4?','32 бита',['16 бит','64 бита','128 бит']],
+ ['Сколько бит занимает одно из четырёх чисел IP-адреса версии 4?','8 бит',['4 бита','16 бит','32 бита']],
+ ['Можно ли двум компьютерам одной сети присвоить одинаковые IP-адреса?','нет, IP-адрес должен быть уникальным в сети',['да, это никак не влияет на работу','да, если у них одинаковые имена','да, если они находятся в разных комнатах']],
+ ['Что определяет маска подсети?','какая часть IP-адреса относится к адресу сети, а какая — к адресу компьютера',['скорость передачи данных в сети','доменное имя компьютера','протокол передачи файлов']]
+];
+function tNetEasy(){
+  const ip=[rnd(11,223),rnd(10,250),rnd(10,250),rnd(11,250)],z=pick([1,2,3]); // z — сколько последних чисел маски равны 0
+  const mask=[255,255,255,255].map((x,k)=>k>=4-z?0:x),net=ip.map((x,k)=>k>=4-z?0:x);
+  const cand=new Set();
+  for(let j=1;j<=3;j++){if(j!==z)cand.add(ip.map((x,k)=>k>=4-j?0:x).join('.'))}
+  cand.add(ip.map((x,k)=>k>=4-z?255:x).join('.'));cand.add(ip.join('.'));
+  const good=net.join('.'),d=shuffle([...cand].filter(x=>x!==good)).slice(0,3);
+  const opts=shuffle([good,...d]);
+  return {type:'choice',tag:'Адрес сети: простая маска',text:`Компьютер имеет IP-адрес <b class="mono">${ip.join('.')}</b> и маску подсети <b class="mono">${mask.join('.')}</b>. Каков адрес сети?`,opts,key:opts.indexOf(good),mono:true};
+}
+function tNetHard(){
+  for(;;){
+    const m=pick([128,192,224,240,248]),pos=pick([2,3]),o=rnd(20,250),block=256-m;
+    if(o%block===0)continue;
+    const base=[rnd(11,223),rnd(10,250),rnd(10,250),rnd(10,250)];
+    const mask=[255,255,255,255];mask[pos]=m;for(let k=pos+1;k<4;k++)mask[k]=0;
+    const ip=base.slice();ip[pos]=o;
+    const nets=(v)=>ip.map((x,k)=>k<pos?x:k===pos?v:0).join('.');
+    const nv=Math.floor(o/block)*block;
+    const cand=new Set();[nv+block,nv-block,0,o,nv+2*block].forEach(v=>{if(v>=0&&v<=255&&v!==nv)cand.add(nets(v))});
+    if(cand.size<3)continue;
+    const good=nets(nv),opts=shuffle([good,...shuffle([...cand]).slice(0,3)]);
+    return {type:'choice',calc:true,tag:'Адрес сети: сложная маска',text:`Компьютер имеет IP-адрес <b class="mono">${ip.join('.')}</b> и маску подсети <b class="mono">${mask.join('.')}</b>. Каков адрес сети?<br><span class="note">Можно считать на черновике и на калькуляторе.</span>`,opts,key:opts.indexOf(good),mono:true};
+  }
+}
+const PROTF=[
+ ['Какой протокол отвечает за разбиение данных на пакеты и контроль их доставки?','TCP',['IP','FTP','HTTPS']],
+ ['Какой протокол отвечает за адресацию устройств и маршрутизацию пакетов?','IP',['TCP','FTP','HTTP']],
+ ['Какой протокол предназначен для передачи файлов между клиентом и сервером?','FTP',['TCP','IP','HTTPS']],
+ ['Чем протокол HTTPS отличается от HTTP?','передаваемые данные шифруются',['он работает только внутри школы','он передаёт только файлы','он не использует IP-адреса']],
+ ['Что такое протокол передачи данных?','набор правил, по которым устройства обмениваются данными',['программа для просмотра веб-страниц','числовой адрес компьютера','устройство для соединения компьютеров']],
+ ['Как расшифровывается HTTP?','HyperText Transfer Protocol — протокол передачи гипертекста',['High Text Transfer Program — программа передачи текста','Hyper Terminal Test Protocol — протокол проверки терминала','Home Transfer Text Page — передача домашней страницы']],
+ ['Какие два протокола составляют основу работы Интернета (стек TCP/IP)?','TCP и IP',['HTTP и FTP','HTTPS и FTP','HTTP и HTTPS']]
+];
+function tUcmp(){
+  for(;;){
+    const us=shuffle(Object.keys(UN)).slice(0,4),big=Math.random()<.5;
+    const vs=us.map(u=>({n:pick([1,2,4,8,16,32,64,128,256,512]),u}));vs.forEach(v=>v.b=v.n*UN[v.u]);
+    if(new Set(vs.map(v=>v.b)).size<4)continue;
+    const best=vs.slice().sort((a,b)=>big?b.b-a.b:a.b-b.b)[0];
+    const opts=shuffle(vs).map(v=>fmt(v.n)+' '+v.u);
+    return {type:'choice',calc:true,tag:'Сравнение скоростей',text:`Какая из скоростей передачи данных <b>${big?'наибольшая':'наименьшая'}</b>?<br><span class="note">1 байт = 8 бит, 1 Кбит = 1024 бит, 1 Мбит = 1024 Кбит (так же для байтов). Можно считать на черновике.</span>`,opts,key:opts.indexOf(fmt(best.n)+' '+best.u),mono:true};
+  }
+}
+// ---------- Перевод единиц скорости ----------
+const UN={'бит/с':1,'байт/с':8,'Кбит/с':1024,'Кбайт/с':8192,'Мбит/с':1048576,'Мбайт/с':8388608};
+const UND={'бит/с':1,'байт/с':8,'Кбит/с':1000,'Кбайт/с':8000,'Мбит/с':1e6,'Мбайт/с':8e6}; // типичная ошибка: 1000 вместо 1024
+const UPAIRS=[['Мбит/с','Кбит/с'],['Кбит/с','бит/с'],['Мбайт/с','Кбит/с'],['Кбайт/с','Кбит/с'],['Кбайт/с','бит/с'],['Мбайт/с','Мбит/с'],['Кбит/с','Кбайт/с'],['бит/с','Кбит/с'],['Кбит/с','Мбит/с'],['бит/с','Кбайт/с'],['Мбит/с','Кбайт/с']];
+function tUnits(){
+  for(;;){
+    const [a,b]=pick(UPAIRS),f=UN[a]/UN[b];let n,ans;
+    if(f>=1){n=pick([2,3,4,5,6,8,10,12,16]);ans=n*f}else{ans=pick([2,3,4,5,6,8,10,16,32]);n=ans/f}
+    if(n>10000000||ans>10000000)continue;
+    const cand=[n*UND[a]/UND[b],ans*8,ans/8,ans*1024,ans/1024,ans*1000].filter(x=>Number.isInteger(x)&&x>0&&x!==ans);
+    const d=[...new Set(cand)];if(d.length<3)continue;
+    const opts=shuffle([ans,...shuffle(d).slice(0,3)]).map(x=>fmt(x)+' '+b);
+    return {type:'choice',calc:true,tag:'Единицы скорости передачи',text:`Скорость передачи данных <b>${fmt(n)} ${a}</b>. Сколько это <b>${b}</b>?<br><span class="note">1 байт = 8 бит, 1 Кбит = 1024 бит, 1 Мбит = 1024 Кбит (так же для байтов). Можно считать на черновике.</span>`,opts,key:opts.indexOf(fmt(ans)+' '+b),mono:true};
+  }
+}
+// ---------- Карточка (варианты печатаются отдельно, файл «Карточки») ----------
+const CARDS=[
+ {v:1,ip:[192,168,37,200],mask:[255,255,255,224],net:[192,168,37,192],
+  bw:'Файл объёмом 1500 Кбайт передан по каналу связи за 2 минуты. Определите пропускную способность канала в Кбит/с.',ans:100,unit:'Кбит/с'},
+ {v:2,ip:[10,15,172,45],mask:[255,255,240,0],net:[10,15,160,0],
+  bw:'Файл объёмом 3 Мбайт передан по сети за 1 минуту 36 секунд. Определите скорость передачи данных в Кбит/с.',ans:256,unit:'Кбит/с'},
+ {v:3,ip:[172,16,89,150],mask:[255,255,255,192],net:[172,16,89,128],
+  bw:'Файл объёмом 900 Кбайт передан по каналу связи за 1 минуту 30 секунд. Определите пропускную способность канала в Кбит/с.',ans:80,unit:'Кбит/с'},
+ {v:4,ip:[192,168,213,77],mask:[255,255,248,0],net:[192,168,208,0],
+  bw:'Файл объёмом 5 Мбайт передан по сети за 1 минуту 20 секунд. Определите скорость передачи данных в Кбит/с.',ans:512,unit:'Кбит/с'}
+];
+function tCnet(){return {type:'cnet',tag:'Карточка, задание 1',text:'Реши <b>задание 1</b> карточки своего варианта: найди <b>адрес сети</b>. Переводить числа в двоичную систему и обратно помогает калькулятор. Запиши решение на карточке, а ответ введи сюда.'}}
+
+const PLAN=[
+ ['Объясняет этические принципы применения ИИ',1,'Этика: принципы'],
+ ['Анализирует ситуацию применения ИИ с точки зрения этики',1,'Этика: ситуация'],
+ ['Определяет правильность записи IP-адреса',1,'IP-адрес'],
+ ['Описывает устройство IP-адреса и назначение маски подсети',1,'IP-адрес: теория'],
+ ['Определяет адрес сети по IP-адресу и маске (простая маска)',1,'Адрес сети: простая маска'],
+ ['Описывает назначение и особенности протоколов передачи информации',1,'Протоколы: теория'],
+ ['Сравнивает скорости передачи данных, заданные в разных единицах',1,'Сравнение скоростей'],
+ ['Описывает назначение протоколов передачи информации (соответствие)',2,'Протоколы: соотв.'],
+ ['Определяет протокол по ситуации его использования',1,'Протоколы: ситуация'],
+ ['Переводит единицы измерения скорости передачи данных',1,'Единицы скорости'],
+ ['Определяет адрес сети по IP-адресу и маске (карточка, задание 1)',2,'Адрес сети (карт.)'],
+ ['Определяет адрес сети по IP-адресу и маске (непростая маска)',2,'Адрес сети: сложная маска']
+];
+const MAXPTS=PLAN.reduce((s,x)=>s+x[1],0);
+function buildTasks(){
+  const t=[fromPool(ETH1,'Этика ИИ'),fromPool(ETH2,'Этика ИИ: ситуация'),tIP(),fromPool(IPF,'IP-адрес: теория'),tNetEasy(),fromPool(PROTF,'Протоколы: теория'),tUcmp(),tMatch(),tPsit(),tUnits(),tCnet(),tNetHard()];
+  t.forEach((x,i)=>{x.pts=PLAN[i][1];x.d=PLAN[i][0]});return t;
+}
+
+/* =====================================================================
+   СОСТОЯНИЕ, АВТОСОХРАНЕНИЕ
+   ===================================================================== */
+let S=null,leaveOpen=null;
+const save=()=>{if(S)store.set(KEY,S)};
+function newId(){return Date.now().toString(36)+'-'+Math.random().toString(36).slice(2,7)}
+function isAnswered(i){const t=S.tasks[i],a=S.ans[i];
+  if(a==null)return false;
+  if(t.type==='match')return a.every(x=>x>=0);
+  if(t.type==='cnet')return !!S.v&&a.every(x=>String(x).trim()!=='');
+  return true;}
+const curCard=()=>CARDS.find(x=>x.v==S.v);
+
+/* =====================================================================
+   СТАРТ
+   ===================================================================== */
+function needName(){
+  const f=$('fio'),c=$('cls');let bad=false;
+  if(f.value.trim().split(/\s+/).filter(Boolean).length<2){f.classList.add('need');bad=true}else f.classList.remove('need');
+  if(!c.value.trim()){c.classList.add('need');bad=true}else c.classList.remove('need');
+  if(bad)msg('<h2>Заполни поля вверху</h2><p>Введи <b>фамилию и имя</b> (два слова) и <b>класс</b>.</p>',[['Хорошо',null,'teal']]);
+  return bad;
+}
+function startWork(){
+  if(needName())return;
+  S={id:newId(),fio:$('fio').value.trim().replace(/\s+/g,' '),cls:$('cls').value.trim().toUpperCase().replace(/\s+/g,''),
+     start:Date.now(),tasks:buildTasks(),ans:[],v:0,leaves:[],fsExits:0,reloads:0,cur:0,finished:false};
+  S.ans=S.tasks.map(t=>t.type==='cnet'?['','','','']:t.type==='match'?[-1,-1,-1,-1]:null);
+  save();enterWork();
+}
+function enterWork(){
+  $('fio').value=S.fio;$('cls').value=S.cls;$('fio').disabled=true;$('cls').disabled=true;
+  $('start').classList.add('hidden');$('end').classList.add('hidden');$('work').classList.remove('hidden');
+  document.body.classList.add('run');goFull();render();
+}
+function goFull(){try{const el=document.documentElement;if(!document.fullscreenElement&&el.requestFullscreen)el.requestFullscreen().catch(()=>{})}catch(e){}}
+
+/* =====================================================================
+   ОТОБРАЖЕНИЕ ЗАДАНИЙ
+   ===================================================================== */
+/* ---------- калькулятор (задания 10 и 12) ---------- */
+function calcHTML(){
+  const B=[['7','8','9','÷'],['4','5','6','×'],['1','2','3','−'],['0',',','=','+'],['C','⌫','(',')']];
+  return `<div class="calc"><h3>Калькулятор</h3><input id="kd" autocomplete="off" spellcheck="false" placeholder="0">
+   <div class="err" id="kr"></div><div class="kgrid">${B.flat().map(b=>`<button type="button" class="kb${'÷×−+='.includes(b)?' op':''}${b==='C'?' cl':''}" data-k="${b}">${b}</button>`).join('')}</div>
+   <div class="note">Можно нажимать кнопки или печатать с клавиатуры, Enter — посчитать.</div></div>`;
+}
+function calcEval(){
+  const kd=$('kd'),kr=$('kr');
+  let e=kd.value.replace(/\s/g,'').replace(/,/g,'.').replace(/[×xх*]/gi,'*').replace(/[÷:/]/g,'/').replace(/[−–]/g,'-');
+  if(!e){kr.textContent='';return}
+  if(!/^[0-9+\-*/.()]+$/.test(e)){kr.textContent='Можно вводить только числа и знаки + − × ÷';return}
+  let r;try{r=Function('"use strict";return ('+e+')')()}catch(x){kr.textContent='Проверь запись выражения';return}
+  if(!isFinite(r)){kr.textContent='Делить на ноль нельзя';return}
+  r=Math.round(r*1e6)/1e6;kd.value=String(r).replace('.',',');kr.textContent='';
+}
+function bindCalc(){
+  const kd=$('kd');
+  document.querySelectorAll('.kb').forEach(b=>b.onclick=()=>{const k=b.dataset.k;
+    if(k==='=')calcEval();else if(k==='C'){kd.value='';$('kr').textContent=''}else if(k==='⌫')kd.value=kd.value.slice(0,-1);else kd.value+=k;kd.focus()});
+  kd.onkeydown=e=>{if(e.key==='Enter'||e.key==='='){e.preventDefault();calcEval()}};
+}
+function vSelect(){return `<div class="bar" style="margin:4px 0 6px"><b>Номер варианта карточки:</b> <select id="cv" class="vsel"><option value="0">— выбери —</option>${CARDS.map(x=>`<option value="${x.v}" ${S.v==x.v?'selected':''}>Вариант ${x.v}</option>`).join('')}</select></div>`}
+function render(){
+  const i=S.cur,t=S.tasks[i];
+  $('navq').innerHTML=S.tasks.map((_,k)=>`<button class="${isAnswered(k)?'done':''} ${k===i?'on':''}" onclick="goTo(${k})" title="Задание ${k+1}">${k+1}</button>`).join('');
+  let h=`<div class="q"><span class="pts">${t.pts} ${t.pts===1?'балл':'балла'}</span><span class="tag">Задание ${i+1} из ${S.tasks.length} · ${t.tag}</span><br>${t.text}</div>`;
+  const c=curCard();
+  if(t.type==='choice'){
+    const ob='<div class="opts">'+t.opts.map((o,k)=>`<button class="opt ${t.mono?'mono':''} ${S.ans[i]===k?'sel':''}" onclick="choose(${k})">${LET[k]})&nbsp; ${esc(o)}</button>`).join('')+'</div>';
+    h+=t.calc?`<div class="cwrap"><div>${ob}</div>${calcHTML()}</div>`:ob;
+  }else if(t.type==='match'){
+    h+='<table class="match">'+t.ps.map((p,k)=>`<tr><td class="p">${p}</td><td><select id="m${k}" class="${S.ans[i][k]>=0?'set':''}"><option value="-1">— выбери назначение —</option>${t.descs.map((d,j)=>`<option value="${j}" ${S.ans[i][k]===j?'selected':''}>${esc(PROTD[d])}</option>`).join('')}</select></td></tr>`).join('')+'</table>';
+  }else if(t.type==='cnet'){
+    const a=S.ans[i];
+    h+=`<div class="cwrap"><div>${vSelect()}
+      <div id="vdata">${c?`<div class="vdata">IP-адрес: <b class="mono">${c.ip.join('.')}</b><br>Маска: <b class="mono">${c.mask.join('.')}</b></div>`:'<p class="note">Выбери номер варианта — появятся данные задания.</p>'}</div>
+      <div class="ipq">Адрес сети:</div><div class="ipin">`+[0,1,2,3].map(k=>`<input id="ip${k}" inputmode="numeric" maxlength="3" autocomplete="off" value="${esc(a[k])}">`).join('<span>.</span>')+`</div></div>
+      <div class="calc"><h3>Калькулятор 10 ↔ 2</h3>
+       <label for="cd">Десятичное число (0–255):</label><input id="cd" inputmode="numeric" maxlength="3" autocomplete="off">
+       <label for="cb">Двоичное число (8 цифр):</label><input id="cb" inputmode="numeric" maxlength="8" autocomplete="off">
+       <div class="err" id="cerr"></div>
+       <div class="note">Введи число в любое поле — во втором появится перевод.</div></div></div>`;
+  }
+  $('qBox').innerHTML=h;
+  $('bPrev').disabled=i===0;$('bNext').disabled=i===S.tasks.length-1;
+  if(t.type==='match')t.ps.forEach((_,k)=>{$('m'+k).onchange=()=>{S.ans[i][k]=+$('m'+k).value;$('m'+k).classList.toggle('set',S.ans[i][k]>=0);save();navUpd()}});
+  if($('cv'))$('cv').onchange=()=>{S.v=+$('cv').value;save();render()};
+  if(t.type==='cnet'){
+    [0,1,2,3].forEach(k=>{const el=$('ip'+k);el.oninput=()=>{el.value=el.value.replace(/\D/g,'').slice(0,3);S.ans[i][k]=el.value;save();navUpd();if(el.value.length===3&&k<3)$('ip'+(k+1)).focus()};
+      el.onkeydown=e=>{if(e.key==='.'&&k<3){e.preventDefault();$('ip'+(k+1)).focus()}}});
+    const cd=$('cd'),cb=$('cb'),ce=$('cerr');
+    cd.oninput=()=>{cd.value=cd.value.replace(/\D/g,'').slice(0,3);ce.textContent='';if(cd.value===''){cb.value='';return}
+      const n=+cd.value;if(n>255){cb.value='';ce.textContent='Число должно быть от 0 до 255';return}cb.value=n.toString(2).padStart(8,'0')};
+    cb.oninput=()=>{cb.value=cb.value.replace(/[^01]/g,'').slice(0,8);ce.textContent='';cd.value=cb.value===''?'':String(parseInt(cb.value,2))};
+  }
+  if($('kd'))bindCalc();
+}
+function navUpd(){[...$('navq').children].forEach((b,k)=>b.classList.toggle('done',isAnswered(k)))}
+function choose(k){S.ans[S.cur]=k;save();render()}
+function go(d){goTo(Math.max(0,Math.min(S.tasks.length-1,S.cur+d)))}
+function goTo(k){S.cur=k;save();render();window.scrollTo(0,0)}
+/* =====================================================================
+   ЗАВЕРШЕНИЕ И ПОДСЧЁТ
+   ===================================================================== */
+function askFinish(){
+  const miss=S.tasks.map((_,k)=>k).filter(k=>!isAnswered(k)).map(k=>k+1);
+  msg(`<h2>Завершить работу?</h2>${miss.length?`<p>Нет ответа в заданиях: <b>${miss.join(', ')}</b>.</p>`:'<p>Ответы даны во всех заданиях.</p>'}<p>После завершения изменить ответы будет нельзя.</p>`,
+    [['Вернуться к заданиям',null,'sec'],['Завершить',finish,'teal']]);
+}
+function grade(){
+  return S.tasks.map((t,i)=>{const a=S.ans[i];let ok=false,given='—';
+    if(t.type==='choice'){if(a!=null){given=t.opts[a];ok=a===t.key}}
+    else if(t.type==='match'){const n=a.filter((x,k)=>x===t.key[k]).length;given=t.ps.map((p,k)=>`${p} → ${a[k]>=0?PROTD[t.descs[a[k]]]:'—'}`).join('; ');
+      return {ok:n===4,given,pts:n===4?2:n>=2?1:0,max:t.pts,tag:t.tag,text:strip(t.text)}}
+    else if(t.type==='cnet'){const c=curCard();if(a.some(x=>String(x).trim()))given=`вариант ${S.v||'?'}: `+a.map(x=>String(x).trim()||'_').join('.');ok=!!c&&a.every((x,k)=>String(x).trim()!==''&&+x===c.net[k])}
+
+    return {ok,given,pts:ok?t.pts:0,max:t.pts,tag:t.tag,text:strip(t.text)};
+  });
+}
+function closeLeaveIfOpen(){if(leaveOpen){S.leaves[S.leaves.length-1].dur=Math.round((Date.now()-leaveOpen)/1000);leaveOpen=null}}
+function fmtDur(sec){const m=Math.floor(sec/60),s=sec%60;return `${m} мин ${String(s).padStart(2,'0')} с`}
+function buildRecord(unfinished){
+  const g=grade(),score=g.reduce((s,x)=>s+x.pts,0);
+  const leaveSec=S.leaves.reduce((s,x)=>s+(x.dur||0),0);
+  const lv=S.leaves.length?`${S.leaves.length} (всего ${fmtDur(leaveSec)}): `+S.leaves.map(x=>`${x.at}${x.dur!=null?' ('+x.dur+' с)':x.reload?' (страница закрыта/перезагружена)':''}`).join(', '):'0';
+  return {secret:CONFIG.SECRET,id:S.id,status:unfinished?'НЕ ЗАВЕРШЕНА':'завершена',
+    time:new Date().toLocaleString('ru-RU'),fio:S.fio,cls:S.cls,score,max:MAXPTS,tag:CONFIG.SHEET_TAG,heads:PLAN.map(x=>x[2]),
+    pts:g.map(x=>x.pts),variant:S.v||'',leaves:S.leaves.length,leavesText:lv,
+    fsExits:S.fsExits,reloads:S.reloads,duration:fmtDur(Math.round((Date.now()-S.start)/1000)),
+    answers:g.map((x,i)=>`${i+1}) [${x.ok?'+':'-'}] ${x.given}`).join('\n'),g};
+}
+function finish(){
+  closeLeaveIfOpen();
+  S.finished=true;const rec=buildRecord(false);S.rec=rec;save();
+  document.body.classList.remove('run');
+  try{if(document.fullscreenElement)document.exitFullscreen()}catch(e){}
+  $('work').classList.add('hidden');
+  showEnd(rec);
+  exportTxt(rec);
+  queueAdd(rec);sendQueue();
+}
+function showEnd(rec){
+  $('end').innerHTML=`<h2>Работа завершена</h2><div class="score">${esc(rec.fio)}, ${esc(rec.cls)}</div>
+   <div class="mark">${rec.score} / ${rec.max}</div>
+   <table class="t" style="max-width:860px;margin-top:10px"><tr><th>№</th><th>Задание</th><th>Баллы</th></tr>${rec.g.map((x,i)=>`<tr><td class="c">${i+1}</td><td>${esc(PLAN[i][0])}</td><td class="c">${x.pts} / ${x.max}</td></tr>`).join('')}</table>
+   <p class="note">Задание с карточки учитель дополнительно проверит по записанному решению.</p>
+   <div id="sendState" class="send wait">Отправка результата в таблицу…</div>
+   <div class="bar"><button class="btn sec" onclick="exportTxt(S.rec)">💾 Сохранить результат ещё раз (.txt)</button><button class="btn" onclick="nextStudent()">Следующий ученик</button></div>`;
+  $('end').classList.remove('hidden');
+}
+function nextStudent(){
+  msg('<h2>Очистить страницу для следующего ученика?</h2><p>Результат уже сохранён в файл'+(CONFIG.SHEET_URL?' и поставлен в отправку в таблицу':'')+'.</p>',
+   [['Отмена',null,'sec'],['Да, очистить',()=>{store.del(KEY);location.reload()},'teal']]);
+}
+
+/* ---------- файл .txt ---------- */
+function exportTxt(rec){
+  let t=`${CONFIG.TITLE}\r\nУченик: ${rec.fio}\r\nКласс: ${rec.cls}\r\nДата: ${rec.time}\r\nСтатус: ${rec.status}\r\nВремя работы: ${rec.duration}\r\n\r\nБАЛЛЫ: ${rec.score} из ${rec.max}\r\n\r\n`;
+  rec.g.forEach((x,i)=>{t+=`${i+1}. ${PLAN[i][0]}: ${x.pts} из ${x.max}\r\n   Ответ ученика: ${x.given}\r\n`});
+  t+=`\r\nВариант карточки: ${rec.variant||'не выбран'}\r\nУходы со страницы: ${rec.leavesText}\r\nВыходы из полноэкранного режима: ${rec.fsExits}\r\nПерезагрузки страницы во время работы: ${rec.reloads}\r\nКод попытки: ${rec.id}\r\n`;
+  const blob=new Blob(['﻿'+t],{type:'text/plain;charset=utf-8'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);
+  a.download=`${CONFIG.FILE_PREFIX}_${rec.fio.replace(/[^\wА-Яа-яЁёӘәҒғҚқҢңӨөҰұҮүҺһІі-]+/g,'_')}_${rec.cls.replace(/[^\wА-Яа-яЁё]+/g,'')}.txt`;
+  document.body.appendChild(a);a.click();a.remove();
+}
+
+/* =====================================================================
+   ОТПРАВКА В GOOGLE-ТАБЛИЦУ (с очередью неотправленных)
+   ===================================================================== */
+function queueAdd(rec){const q=store.get(QKEY)||[];const r=Object.assign({},rec);delete r.g;if(!q.some(x=>x.id===r.id))q.push(r);store.set(QKEY,q)}
+const URLOK=u=>/^https:\/\/script\.google\.com\/(macros|a\/macros\/[^\/]+)\/s\/[\w-]{20,}\/exec$/.test(u);
+// причина неудачи понятными словами
+function why(code){return ({
+  nourl:'ссылка на таблицу не вставлена в файл (строка SHEET_URL)',
+  badurl:'ссылка вставлена неправильно — нужна ссылка «URL веб-приложения», которая начинается с https://script.google.com/macros/s/ и заканчивается на /exec',
+  dev:'вставлена тестовая ссылка (заканчивается на /dev) — нужна ссылка, которая заканчивается на /exec',
+  access:'доступ к скрипту закрыт — в развертывании нужно выбрать «У кого есть доступ: Все» (не «Все, у кого есть аккаунт Google»)',
+  secret:'секретное слово в файле и в скрипте не совпадает',
+  script:'скрипт в таблице выдал ошибку',
+  net:'нет связи с script.google.com (интернет или школьный фильтр)'})[code]||code}
+async function postOne(r){
+  const u=CONFIG.SHEET_URL;
+  if(!u)return {st:'nourl'};if(/\/dev$/.test(u))return {st:'dev'};if(!URLOK(u))return {st:'badurl'};
+  let txt;
+  try{const res=await fetch(u,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(r),redirect:'follow'});txt=await res.text()}
+  catch(e){
+    // браузер не дал прочитать ответ — отправляем «вслепую»
+    try{await fetch(u,{method:'POST',mode:'no-cors',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(r)});return {st:'blind'}}
+    catch(e2){return {st:'net'}}
+  }
+  let j=null;try{j=JSON.parse(txt)}catch(e){}
+  if(!j)return {st:/<html|accounts\.google|ServiceLogin/i.test(txt)?'access':'script',info:txt.replace(/<[^>]+>/g,' ').replace(/\s+/g,' ').slice(0,160)};
+  if(j.ok)return {st:'ok'};
+  if(j.err==='secret')return {st:'secret'};
+  return {st:'script',info:j.err||''};
+}
+let sending=false;
+async function sendQueue(){
+  const box=$('sendState');
+  if(!CONFIG.SHEET_URL){if(box){box.className='send warn';box.innerHTML='Таблица не подключена — результат сохранён <b>в файл .txt</b>. Загрузи файл на Padlet.'}updQueueBox();return}
+  if(sending)return;sending=true;
+  let q=store.get(QKEY)||[],left=[],last='ok';
+  for(const r of q){const res=await postOne(r),st=res.st;if(st==='ok'||st==='blind'){if(st==='blind'&&last==='ok')last='blind'}else{left.push(r);last=st}}
+  store.set(QKEY,left);sending=false;
+  if(box){
+    if(!left.length&&last==='ok'){box.className='send ok';box.innerHTML='✔ Результат <b>записан в таблицу</b> учителя. Файл .txt тоже сохранён.'}
+    else if(!left.length){box.className='send ok';box.innerHTML='Результат отправлен в таблицу (без подтверждения). Файл .txt сохранён — загрузи его на Padlet.'}
+    else{box.className='send warn';box.innerHTML=`Не удалось отправить в таблицу: ${why(last)}. Результат сохранён <b>в файл .txt</b> и будет отправлен автоматически при следующем открытии файла. <button class="btn sec" style="font-size:17px;padding:4px 12px" onclick="sendQueue()">Повторить</button>`}
+  }
+  updQueueBox();
+}
+function updQueueBox(){const q=store.get(QKEY)||[];const b=$('queueBox');if(!b)return;
+  b.innerHTML=q.length&&CONFIG.SHEET_URL?`Неотправленных результатов на этом компьютере: <b>${q.length}</b>. <button class="btn sec" style="font-size:16px;padding:3px 12px" onclick="sendQueue()">Отправить</button>`:''}
+async function pingSheet(){
+  const u=CONFIG.SHEET_URL,ls=$('linkState');
+  if(!u||/\/dev$/.test(u)||!URLOK(u)){const c=!u?'nourl':/\/dev$/.test(u)?'dev':'badurl';ls.textContent='Таблица: ✘ '+why(c);return c}
+  ls.textContent='Таблица: проверяю…';
+  try{const r=await fetch(u+'?ping=1',{redirect:'follow'});const t=await r.text();let j=null;try{j=JSON.parse(t)}catch(e){}
+    if(j&&j.ok){ls.textContent='Таблица: ✔ связь есть';return 'ok'}
+    const c=/<html|accounts\.google|ServiceLogin/i.test(t)?'access':'script';ls.textContent='Таблица: ✘ '+why(c);return c}
+  catch(e){ls.textContent='Таблица: ✘ '+why('net');return 'net'}
+}
+async function testWrite(){
+  const c=await pingSheet();
+  if(c!=='ok'){msg(`<h2>Связи с таблицей нет</h2><p>Причина: <b>${esc(why(c))}</b>.</p>`,[['Понятно',null,'teal']]);return}
+  const r={secret:CONFIG.SECRET,id:'test-'+newId(),status:'ТЕСТ',time:new Date().toLocaleString('ru-RU'),fio:'Проверка Учитель',cls:'ТЕСТ',score:0,max:MAXPTS,
+    tag:CONFIG.SHEET_TAG,heads:PLAN.map(x=>x[2]),pts:PLAN.map(()=>0),variant:'',leaves:0,leavesText:'0',fsExits:0,reloads:0,duration:'0',answers:'тестовая строка'};
+  const res=await postOne(r);
+  if(res.st==='ok')msg(`<h2>✔ Тестовая строка записана</h2><p>Откройте таблицу: там появился лист <b>«ТЕСТ ${esc(CONFIG.SHEET_TAG)}»</b>. Его потом можно удалить.</p>`,[['Отлично',null,'teal']]);
+  else if(res.st==='blind')msg('<h2>Отправлено без подтверждения</h2><p>Проверьте, появился ли в таблице лист «ТЕСТ». Если нет — напишите, что показала проверка связи.</p>',[['Понятно',null,'teal']]);
+  else msg(`<h2>Строка не записалась</h2><p>Причина: <b>${esc(why(res.st))}</b>.</p>${res.info?`<p class="note">Ответ сервера: ${esc(res.info)}</p>`:''}`,[['Понятно',null,'teal']]);
+}
+
+/* =====================================================================
+   ЗАЩИТА: уходы со страницы, F12, контекстное меню
+   ===================================================================== */
+const running=()=>S&&!S.finished&&document.body.classList.contains('run');
+function markLeave(){
+  if(!running()||leaveOpen)return;
+  leaveOpen=Date.now();S.leaves.push({at:new Date().toLocaleTimeString('ru-RU'),dur:null});save();
+  $('leaveN').textContent=S.leaves.length;$('ovLeave').classList.remove('hidden');
+}
+function markBack(){if(leaveOpen){closeLeaveIfOpen();save()}}
+window.addEventListener('blur',markLeave);
+window.addEventListener('focus',markBack);
+document.addEventListener('visibilitychange',()=>{document.hidden?markLeave():markBack()});
+document.addEventListener('fullscreenchange',()=>{if(!document.fullscreenElement&&running()){S.fsExits++;save();
+  msg('<h2>Полноэкранный режим выключен</h2><p>Работа выполняется в полноэкранном режиме. Выход записан.</p>',[['Вернуться к работе',goFull,'teal']])}});
+function backToWork(){markBack();$('ovLeave').classList.add('hidden');goFull()}
+document.addEventListener('keydown',e=>{
+  const k=(e.key||'').toLowerCase(),c=e.ctrlKey||e.metaKey;
+  if(e.key==='F12'||(c&&e.shiftKey&&['i','j','c','k','ш','о','с','л'].includes(k))||(c&&['u','s','p','г','ы','з'].includes(k))){e.preventDefault();e.stopPropagation();return false}
+},true);
+document.addEventListener('contextmenu',e=>{if(running())e.preventDefault()});
+['copy','cut'].forEach(ev=>document.addEventListener(ev,e=>{if(running())e.preventDefault()}));
+window.addEventListener('beforeunload',e=>{if(running()){save();e.preventDefault();e.returnValue=''}});
+
+/* ---------- окно сообщений (вместо alert — alert засчитывался бы как уход) ---------- */
+function msg(html,btns){
+  $('msgBody').innerHTML=html;
+  $('msgBtns').innerHTML='';
+  btns.forEach(([txt,fn,cls])=>{const b=document.createElement('button');b.className='btn '+(cls||'');b.textContent=txt;
+    b.onclick=()=>{$('ovMsg').classList.add('hidden');if(fn)fn()};$('msgBtns').appendChild(b)});
+  $('ovMsg').classList.remove('hidden');
+}
+
+/* =====================================================================
+   ЗАГРУЗКА СТРАНИЦЫ
+   ===================================================================== */
+function init(){
+  document.title=CONFIG.TITLE;$('ttl').textContent=CONFIG.TITLE;$('startTitle').textContent=CONFIG.TITLE;
+  $('nTasks').textContent=PLAN.length;$('nPts').textContent=MAXPTS;
+  $('planTbl').innerHTML='<tr><th>№</th><th>Что проверяется</th><th>Баллы</th></tr>'+PLAN.map((p,i)=>`<tr><td class="c">${i+1}</td><td>${p[0]}</td><td class="c">${p[1]}</td></tr>`).join('');
+  $('fio').value='';$('cls').value='';
+  const old=store.get(KEY);
+  if(old&&!old.finished&&old.tasks){
+    $('startMain').classList.add('hidden');$('resumeBox').classList.remove('hidden');
+    $('resumeBox').innerHTML=`<div class="rules"><b>Найдена незавершённая работа:</b> ${esc(old.fio)}, ${esc(old.cls)} (начата ${new Date(old.start).toLocaleTimeString('ru-RU')}).</div>
+     <div class="bar"><button class="btn teal" onclick="resume()">Продолжить работу</button><button class="btn sec" onclick="notMine()">Это не моя работа</button></div>`;
+  }else if(old&&old.finished&&old.rec){
+    S=old;$('start').classList.add('hidden');$('fio').value=S.fio;$('cls').value=S.cls;$('fio').disabled=true;$('cls').disabled=true;showEnd(S.rec);sendQueue();
+  }
+  updQueueBox();
+  if(CONFIG.SHEET_URL){pingSheet();if((store.get(QKEY)||[]).length&&!(old&&old.finished))sendQueue()}else $('linkState').textContent='Таблица: не подключена — результаты сохраняются в файл .txt';
+}
+function resume(){S=store.get(KEY);S.reloads=(S.reloads||0)+1;
+  const l=S.leaves[S.leaves.length-1];if(l&&l.dur==null)l.reload=true;save();$('resumeBox').classList.add('hidden');enterWork()}
+function notMine(){
+  msg('<h2>Начать новую работу?</h2><p>Незавершённая работа будет отправлена учителю с пометкой «НЕ ЗАВЕРШЕНА» и сохранена в файл.</p>',
+   [['Отмена',null,'sec'],['Да',()=>{S=store.get(KEY);const rec=buildRecord(true);exportTxt(rec);queueAdd(rec);sendQueue();store.del(KEY);S=null;
+     $('resumeBox').classList.add('hidden');$('startMain').classList.remove('hidden')},'teal']]);
+}
+init();
+</script>
+</body>
+</html>
