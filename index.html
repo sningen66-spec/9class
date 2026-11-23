@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Тренажёр трассировки кода • 7 класс</title>
+<link href="https://fonts.googleapis.com/css2?family=Golos+Text:wght@400;600;800&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#fbfcff;--grid:#dfe7fb;--ink:#1b2745;--mute:#5d6a8c;--pen:#2b4acb;--card:#ffffff;--line:#b9c6ee;--ok:#16794f;--okbg:#dff5ea;--bad:#b3261e;--badbg:#fde4e1;--hint:#fff3c4;--code:#eef2ff;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){color-scheme:dark;--bg:#141a2e;--grid:#212b4a;--ink:#e6ebff;--mute:#9aa8d1;--pen:#8fa6ff;--card:#1b2340;--line:#3a4772;--ok:#6fdca8;--okbg:#17382c;--bad:#ff8f86;--badbg:#472220;--hint:#4a4120;--code:#222c52}}
+:root[data-theme="dark"]{color-scheme:dark;--bg:#141a2e;--grid:#212b4a;--ink:#e6ebff;--mute:#9aa8d1;--pen:#8fa6ff;--card:#1b2340;--line:#3a4772;--ok:#6fdca8;--okbg:#17382c;--bad:#ff8f86;--badbg:#472220;--hint:#4a4120;--code:#222c52}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 "Golos Text",system-ui,sans-serif;
+background-image:linear-gradient(var(--grid) 1px,transparent 1px),linear-gradient(90deg,var(--grid) 1px,transparent 1px);background-size:24px 24px}
+main{max-width:860px;margin:0 auto;padding:20px 14px 48px}
+h1{font-size:clamp(24px,5vw,34px);font-weight:800;margin:0 0 4px;letter-spacing:-.01em}
+.sub{color:var(--mute);margin:0 0 14px}
+.rules{display:grid;gap:8px;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));margin-bottom:16px}
+.rules div{background:var(--card);border:1.5px solid var(--line);border-radius:8px;padding:8px 12px;font-size:14px}
+.rules b{color:var(--pen)}
+code,.mono{font-family:"JetBrains Mono",ui-monospace,monospace}
+.bar{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px;align-items:center}
+.chip{border:1.5px solid var(--line);background:var(--card);color:var(--ink);border-radius:20px;padding:6px 12px;font:inherit;font-size:14px;cursor:pointer}
+.chip[aria-current="true"]{background:var(--pen);border-color:var(--pen);color:var(--bg);font-weight:600}
+.chip.done::after{content:" ✓";color:var(--ok)}
+.chip[aria-current="true"].done::after{color:inherit}
+.prog{margin-left:auto;color:var(--mute);font-size:14px}
+.card{background:var(--card);border:2px solid var(--ink);border-radius:6px;padding:18px;box-shadow:5px 5px 0 var(--line)}
+.card h2{margin:0 0 2px;font-size:21px}
+.card .q{color:var(--mute);margin:0 0 12px}
+.tabs{display:inline-flex;border:1.5px solid var(--line);border-radius:6px;overflow:hidden;margin-bottom:8px}
+.tabs button{border:0;background:transparent;color:var(--mute);font:inherit;font-size:13px;padding:5px 12px;cursor:pointer}
+.tabs button[aria-pressed="true"]{background:var(--code);color:var(--ink);font-weight:600}
+pre{margin:0 0 14px;background:var(--code);border-radius:6px;padding:12px 14px;font:14px/1.6 "JetBrains Mono",monospace;overflow-x:auto}
+.tw{overflow-x:auto;margin-bottom:12px}
+table{border-collapse:collapse;min-width:100%}
+th{font-size:13px;font-weight:600;color:var(--mute);text-align:center;padding:4px 6px;border-bottom:2px solid var(--ink)}
+td{border:1px solid var(--line);padding:0;text-align:center;min-width:84px}
+td.lab{padding:6px 8px;font-family:"JetBrains Mono",monospace;font-weight:700;background:var(--code)}
+td input,td select{width:100%;border:0;background:transparent;color:var(--pen);font:700 16px "JetBrains Mono",monospace;text-align:center;padding:9px 4px;outline:none;border-radius:0}
+td input:focus,td select:focus{box-shadow:inset 0 0 0 2px var(--pen)}
+td.ok{background:var(--okbg)}td.bad{background:var(--badbg)}td.hint{background:var(--hint)}
+td.ok input,td.ok select{color:var(--ok)}td.bad input,td.bad select{color:var(--bad)}
+.ans{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:12px 0}
+.ans label{font-weight:600}
+.ans input{font:700 17px "JetBrains Mono",monospace;border:2px solid var(--ink);border-radius:6px;padding:7px 10px;width:170px;background:var(--bg);color:var(--pen)}
+.ans input.ok{border-color:var(--ok);background:var(--okbg);color:var(--ok)}
+.ans input.bad{border-color:var(--bad);background:var(--badbg);color:var(--bad)}
+.btns{display:flex;flex-wrap:wrap;gap:8px}
+.btn{font:600 15px "Golos Text",sans-serif;border:2px solid var(--ink);border-radius:6px;background:var(--card);color:var(--ink);padding:8px 14px;cursor:pointer}
+.btn.main{background:var(--pen);border-color:var(--pen);color:var(--bg)}
+.btn:focus-visible,.chip:focus-visible,.tabs button:focus-visible{outline:3px solid var(--pen);outline-offset:2px}
+#msg{min-height:26px;margin-top:12px;font-weight:600}
+#msg.ok{color:var(--ok)}#msg.bad{color:var(--bad)}
+@media (prefers-reduced-motion:no-preference){td,.ans input{transition:background-color .2s}}
+.who{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:14px}.who input{font:600 16px "Golos Text",sans-serif;border:2px solid var(--ink);border-radius:6px;padding:6px 10px;background:var(--card);color:var(--ink);min-width:220px}#sv{min-height:20px;font-size:13px;color:var(--mute);margin-top:4px}
+</style>
+</head>
+<body>
+<main>
+<h1>Тренажёр: трассировка кода</h1>
+<p class="sub">Рабочий лист № 1 · переменные, остаток % и условие IF</p>
+<div class="who"><label for="nm">Имя ученика:</label><input id="nm" autocomplete="name" placeholder="Фамилия Имя"></div>
+<div class="rules">
+<div><b>Присваивание =</b> — старое значение стирается, записывается новое.</div>
+<div><b>Остаток %</b> — 7 % 2 = 1, 8 % 4 = 0.</div>
+<div><b>IF</b> — условие верно: выполняем блок. Неверно: пропускаем.</div>
+</div>
+<div class="bar" id="bar" role="tablist"></div>
+<section class="card" id="card"></section>
+</main>
+<script>
+const TASKS=[
+{g:'Разбор',t:'Разминка',q:'Что будет выведено?',k:'a',s:[['a','10'],['b','a'],['a','4']],pr:['a','b']},
+{g:'Разбор',t:'Счётчик count',q:'Проверяем числа 3, 6, 9, 12. Что будет напечатано?',k:'l',it:[3,6,9,12],m:6,r:0,act:'count'},
+{g:'Разбор',t:'Накопление sum',q:'Проверяем числа 1, 4, 9, 16, 25. Чему равна sum?',k:'l',it:[1,4,9,16,25],m:4,r:0,act:'sum'},
+{g:'ДЗ-1',t:'Перезапись x',q:'Что будет выведено?',k:'a',s:[['x','4'],['x','x + 5'],['x','x * 2']],pr:['x']},
+{g:'ДЗ-2',t:'Две переменные a и b',q:'Что будет выведено?',k:'a',s:[['a','20'],['a','a - 7'],['b','a + 3'],['a','b - 5']],pr:['a']},
+{g:'ДЗ-3',t:'Умножение и вычитание',q:'Что будет выведено?',k:'a',s:[['k','2'],['k','k * 3'],['k','k * 3'],['k','k - 8']],pr:['k']},
+{g:'ДЗ-4',t:'Вычисления с x и y',q:'Что будет выведено?',k:'a',s:[['x','15'],['y','4'],['x','x - y'],['y','x + y']],pr:['y']},
+{g:'ДЗ-5',t:'Чётные числа',q:'Выведи чётные числа из набора [1, 3, 5, 7, 8]',k:'l',it:[1,3,5,7,8],m:2,r:0,act:'print'},
+{g:'ДЗ-6',t:'Сумма нечётных',q:'Сумма нечётных чисел из набора [1, 2, 3, 4, 5]',k:'l',it:[1,2,3,4,5],m:2,r:1,act:'sum'},
+{g:'ДЗ-7',t:'Кратные 3',q:'Подсчёт кратных 3 из набора [3, 6, 9, 12]',k:'l',it:[3,6,9,12],m:3,r:0,act:'count'},
+{g:'ДЗ-8',t:'Произведение кратных 4',q:'Произведение кратных 4 из набора [2, 4, 6, 8]',k:'l',it:[2,4,6,8],m:4,r:0,act:'product'}];
+const GEN='Ещё задачи';
+const $=s=>document.querySelector(s);
+let cur=0,task=TASKS[0],gen=false,solved=new Set();
+try{solved=new Set(JSON.parse(localStorage.getItem('trace7')||'[]'))}catch(e){}
+const save=()=>{try{localStorage.setItem('trace7',JSON.stringify([...solved]))}catch(e){}};
+const rnd=(a,b)=>a+Math.floor(Math.random()*(b-a+1));
+const pick=a=>a[rnd(0,a.length-1)];
+
+function makeTask(){
+ if(Math.random()<.45){
+  const [u,v]=pick([['a','b'],['x','y'],['k','n'],['p','q']]);
+  const s=[[u,String(rnd(3,15))]];
+  const ops=['+','-','*'];
+  const n=rnd(3,4);
+  for(let i=0;i<n;i++){
+   const tgt=i==0&&Math.random()<.7?v:pick([u,v]);
+   const have=s.map(z=>z[0]);
+   const src=have.includes(tgt)?tgt:pick(have);
+   const o=pick(ops);
+   const oth=[...new Set(have)].filter(h=>h!==src);
+   const rhs=Math.random()<.3&&oth.length?pick(oth):String(rnd(2,6));
+   s.push([tgt,`${src} ${o} ${rhs}`]);
+  }
+  return {g:GEN,t:'Новая задача: переменные',q:'Что будет выведено?',k:'a',s,pr:[s[s.length-1][0]]};
+ }
+ for(;;){
+  const m=rnd(2,5),act=pick(['count','sum','product','print','sum']);
+  const it=[];const L=rnd(5,6);
+  for(let i=0;i<L;i++)it.push(act=='product'?rnd(2,9):rnd(1,20));
+  const r=m==2&&Math.random()<.5?1:0;
+  const hits=it.filter(n=>n%m==r).length;
+  if(hits<1||hits>(act=='product'?3:5))continue;
+  const w={count:'Подсчёт',sum:'Сумма',product:'Произведение',print:'Вывод'}[act];
+  return {g:GEN,t:'Новая задача: цикл и IF',q:`${w} чисел, у которых n % ${m} == ${r}. Набор: [${it.join(', ')}]`,k:'l',it,m,r,act};
+ }
+}
+const ACC={count:['count',0,'{a} + 1'],sum:['sum',0],product:['product',1]};
+function code(t,py){
+ const o=[];
+ if(t.k=='a'){
+  t.s.forEach(([v,e])=>o.push(`${v} = ${e}`));
+  t.pr.forEach(v=>o.push(py?`print(${v})`:`PRINT ${v}`));
+ }else{
+  const a=ACC[t.act],nm=a&&a[0];
+  const upd=t.act=='print'?(py?'print(n)':'PRINT n'):t.act=='count'?`${nm} = ${nm} + 1`:t.act=='sum'?`${nm} = ${nm} + n`:`${nm} = ${nm} * n`;
+  if(a)o.push(`${nm} = ${a[1]}`);
+  const L=`[${t.it.join(', ')}]`;
+  o.push(py?`for n in ${L}:`:`ДЛЯ каждого n из ${L}:`);
+  o.push(py?`    if n % ${t.m} == ${t.r}:`:`  IF n % ${t.m} == ${t.r} THEN`);
+  o.push((py?'        ':'    ')+upd);
+  if(!py)o.push('  END IF');
+  if(a)o.push(py?`print(${nm})`:`PRINT ${nm}`);
+ }
+ return o.join('\n');
+}
+function solve(t){
+ const rows=[];let ans=[];
+ if(t.k=='a'){
+  const vars=[...new Set(t.s.map(z=>z[0]))],st={};
+  t.s.forEach(([v,e],i)=>{
+   st[v]=Function(...vars,'return '+e)(...vars.map(x=>st[x]));
+   rows.push({lab:String(i+1),head:null,cells:vars.map(x=>({e:x in st?String(st[x]):'-'}))});
+  });
+  ans=t.pr.map(v=>st[v]);
+  return {vars,rows,ans};
+ }
+ let acc=ACC[t.act]?ACC[t.act][1]:null;
+ t.it.forEach(n=>{
+  const rem=n%t.m,yes=rem==t.r;
+  if(yes){if(t.act=='count')acc++;if(t.act=='sum')acc+=n;if(t.act=='product')acc*=n;if(t.act=='print')ans.push(n)}
+  rows.push({lab:String(n),cells:[{e:String(rem)},{e:yes?'Да':'Нет',sel:1},{e:t.act=='print'?(yes?String(n):'-'):String(acc)}]});
+ });
+ if(t.act!='print')ans=[acc];
+ return {rows,ans};
+}
+let S,tabPy=false;
+function render(){
+ const t=task;S=solve(t);
+ const heads=t.k=='a'?['Шаг',...S.vars.map(v=>`Значение ${v}`)]:['Число n',`n % ${t.m}`,`n % ${t.m} == ${t.r}?`,t.act=='print'?'PRINT':`Новое значение ${ACC[t.act][0]}`];
+ const stepTxt=t.k=='a'?t.s.map(z=>z.join(' = ')):null;
+ let h=`<h2>${t.g==GEN?t.t:t.g+'. '+t.t}</h2><p class="q">${t.q}</p>
+ <div class="tabs"><button data-py="0" aria-pressed="${!tabPy}">Псевдокод</button><button data-py="1" aria-pressed="${tabPy}">Python</button></div>
+ <pre id="code">${code(t,tabPy)}</pre>
+ <div class="tw"><table><thead><tr>${heads.map(x=>`<th>${x}</th>`).join('')}</tr></thead><tbody>`;
+ S.rows.forEach((r,i)=>{
+  h+=`<tr><td class="lab">${t.k=='a'?(i+1)+'. '+stepTxt[i]:r.lab}</td>`;
+  r.cells.forEach((c,j)=>{
+   h+=c.sel?`<td><select aria-label="Да или Нет" data-e="${c.e}"><option></option><option>Да</option><option>Нет</option></select></td>`
+   :`<td><input inputmode="text" autocomplete="off" data-e="${c.e}" aria-label="строка ${i+1}, столбец ${j+1}"></td>`;
+  });
+  h+='</tr>';
+ });
+ h+=`</tbody></table></div>
+ <p class="q" style="margin:0 0 2px">${t.k=='a'?'Пока переменная не задана, поставь «-».':'Если условие неверно, значение не меняется (для PRINT поставь «-»).'}</p>
+ <div class="ans"><label for="fa">Итоговый ответ${S.ans.length>1?' (через пробел)':''}:</label><input id="fa" autocomplete="off"></div>
+ <div class="btns"><button class="btn main" id="chk">Проверить</button><button class="btn" id="hnt">Подсказка</button><button class="btn" id="shw">Показать решение</button>${gen?'<button class="btn" id="nxt">Новая задача</button>':''}</div>
+ <div id="msg" role="status"></div><div id="sv"></div>`;
+ $('#card').innerHTML=h;
+ revealed=false;tries=0;sent=false;t0=Date.now();
+}
+let revealed=false,tries=0,sent=false,t0=Date.now();
+function report(res){
+ if(sent)return;sent=true;
+ const r={name:$('#nm').value.trim()||'без имени',task:(task.g==GEN?'Ещё: ':task.g+'. ')+task.t,cond:task.q,result:res,tries,sec:Math.round((Date.now()-t0)/1000)};
+ const sv=$('#sv');
+ if(window.google&&google.script&&google.script.run){
+  sv.textContent='Сохраняю результат…';
+  google.script.run.withSuccessHandler(()=>{sv.textContent='Результат сохранён.'}).withFailureHandler(()=>{sv.textContent='Не удалось сохранить результат.';sent=false}).saveResult(r);
+ }else sv.textContent='Результат не отправлен: страница открыта вне Google Apps Script.';
+}
+const norm=v=>v.trim().replace(/[—–−]/g,'-').toLowerCase();
+const cells=()=>[...document.querySelectorAll('td input,td select')];
+function ok(el){
+ const v=norm(el.value),e=norm(el.dataset.e);
+ return e=='-'?(v==''||v=='-'):v==e;
+}
+function ansOk(){
+ const g=($('#fa').value.match(/-?\d+/g)||[]).map(Number);
+ return g.length==S.ans.length&&g.every((x,i)=>x==S.ans[i]);
+}
+function msg(t,c){const m=$('#msg');m.textContent=t;m.className=c||''}
+function check(){
+ tries++;let bad=0,empty=0;
+ cells().forEach(el=>{
+  const td=el.parentNode;td.classList.remove('ok','bad','hint');
+  if(el.value.trim()===''&&norm(el.dataset.e)!='-'){empty++;bad++;return}
+  if(ok(el))td.classList.add('ok');else{td.classList.add('bad');bad++}
+ });
+ const fa=$('#fa'),aOk=ansOk();
+ fa.className=fa.value.trim()===''?'':aOk?'ok':'bad';
+ if(!bad&&aOk){
+  if(revealed){msg('Верно, но с подсказкой. Попробуй ещё раз без неё.','ok');report('с подсказкой')}
+  else{msg('Всё верно! Таблица и ответ совпали.','ok');report('верно');if(!gen){solved.add(cur);save();paint()}}
+ }else if(!bad)msg('Таблица верна, но итоговый ответ не совпал. Он берётся из PRINT.','bad');
+ else msg(`Ошибок в таблице: ${bad-empty}${empty?`, пустых клеток: ${empty}`:''}. Проверь красные клетки по шагам.`,'bad');
+}
+function hint(){
+ const el=cells().find(e=>!ok(e));
+ if(!el){msg('В таблице ошибок нет. Проверь итоговый ответ.');return}
+ revealed=true;el.value=el.dataset.e=='-'?'-':el.dataset.e;
+ el.parentNode.className='hint';msg('Подсказка: одна клетка заполнена. Разберись, откуда это значение.');
+}
+function show(){
+ revealed=true;cells().forEach(e=>{e.value=e.dataset.e;e.parentNode.className='ok'});
+ $('#fa').value=S.ans.join(' ');$('#fa').className='ok';msg('Это решение. Сравни со своим и попробуй другую задачу.');report('показано решение');
+}
+function paint(){
+ const b=$('#bar');b.innerHTML='';
+ TASKS.forEach((t,i)=>{
+  const c=document.createElement('button');c.className='chip'+(solved.has(i)?' done':'');c.textContent=t.g;
+  c.setAttribute('aria-current',String(!gen&&cur==i));c.onclick=()=>go(i);b.appendChild(c);
+ });
+ const c=document.createElement('button');c.className='chip';c.textContent=GEN;c.setAttribute('aria-current',String(gen));
+ c.onclick=()=>{gen=true;task=makeTask();render();paint()};b.appendChild(c);
+ const p=document.createElement('span');p.className='prog';p.textContent=`Решено: ${solved.size} из ${TASKS.length}`;b.appendChild(p);
+}
+function go(i){gen=false;cur=i;task=TASKS[i];render();paint()}
+document.addEventListener('click',e=>{
+ const t=e.target;
+ if(t.id=='chk')check();else if(t.id=='hnt')hint();else if(t.id=='shw')show();
+ else if(t.id=='nxt'){task=makeTask();render()}
+ else if(t.dataset&&t.dataset.py!==undefined){tabPy=t.dataset.py=='1';document.querySelectorAll('.tabs button').forEach(b=>b.setAttribute('aria-pressed',String(b==t)));$('#code').textContent=code(task,tabPy)}
+});
+document.addEventListener('keydown',e=>{if(e.key=='Enter'&&e.target.matches('input')){const a=cells().concat([$('#fa')]);const i=a.indexOf(e.target);if(i>=0&&i<a.length-1)a[i+1].focus();else check()}});
+go(0);
+</script>
+</body>
+</html>
